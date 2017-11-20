@@ -101,18 +101,26 @@ class PExp():
         # value is passed: this is n_outcomes
         else:
             if len(args)>1:
-                raise AttributeError('PExp admits only one free argument as n_outcomes')
+                raise AttributeError('PExp admits only one free argument as n_outcomes or alphabet list')
             elif len(args)==1:
-                self.n_outcomes = args[0]
+                self.alphabet = []
+                if type(args[0])==list:
+                    self.n_outcomes = len(args[0])
+                    #print(self.n_outcomes)
+                    #print(args[0])
+                    for a in args[0]:
+                    #    print(a)
+                        self.alphabet.append(tuple(a))
+                    #   print(self.alphabet)
+                else:
+                    self.n_outcomes = args[0]
+                    for k in range(self.n_outcomes):
+                        self.alphabet.append(tuple()+(str(k+1),))
             else:
                 self.n_outcomes = 2
             self.population = None
             self.prior_prob = np.ones(self.n_outcomes,dtype='float')/self.n_outcomes
-            self.alphabet = []
-            for k in range(self.n_outcomes):
-                self.alphabet.append(tuple()+(str(k+1),))
-                #self.alphabet.append(tuple(k+1))
-                #self.alphabet.append((k+1,))
+            
                 
         if 'n_trials' in kwargs:
             self.n_trials = kwargs['n_trials']
