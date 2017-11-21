@@ -2,11 +2,23 @@ import numpy as np
 import pprint
 from fractions import Fraction
 
+###########################################################################################
+#                                      CLASS PEXP                                         #
+###########################################################################################
+
 class PExp():
     
     def __init__(self,*args,**kwargs):
+
+    	####################################################
+    	#              Check input arguments               #
+    	####################################################
+
+    	################### POPULATION #####################
         # Population has the highest priority
+        self.has_population = False
         if 'population' in kwargs:
+            self.has_population = True
             # Population is a list
             if type(kwargs['population']) == list:
                 # Create alphabet from population
@@ -35,15 +47,22 @@ class PExp():
             elif type(kwargs['population']) == dict:
                 # Create alphabet from population
                 self.alphabet = sorted(kwargs['population'].keys())
+                # Set alphabet items as tuples
+                for k in range(len(self.alphabet)):
+                    if type(self.alphabet[k]) != tuple:
+                        self.alphabet[k] = tuple(self.alphabet[k])
                 # Set population
-                self.population = kwargs['population']
+                self.population = dict.fromkeys(self.alphabet,0)
+                for sym in self.alphabet:
+                    self.population[sym] = kwargs['population'][sym[0]]
                 # Set n_outcomes
                 self.n_outcomes = len(self.alphabet)
                 # Set prior_prob
                 self.prior_prob = np.zeros(self.n_outcomes)
                 k=0
                 for sym in self.alphabet:
-                    self.prior_prob[k] = kwargs['population'][sym]
+                    #self.prior_prob[k] = kwargs['population'][sym]
+                    self.prior_prob[k] = self.population[sym]
                     k+=1
                 # Normalize prior_prob
                 self.prior_prob /= np.sum(self.prior_prob)
@@ -52,6 +71,7 @@ class PExp():
             else:
                 raise TypeError('Population must be a list or a dictionary')
                 
+        ################### PRIOR_PROB #####################
         # If population is not present at input, build experiment with prior_prob
         elif 'prior_prob' in kwargs:
             # Set population to None
@@ -75,12 +95,17 @@ class PExp():
                     self.alphabet.append(tuple(a))
             # If alphabet argument is not present, build an artificial alphabet (1,2,3,...)
             else:
-                self.alphabet = []
-                for k in range(self.n_outcomes):
-                    self.alphabet.append(tuple()+(str(k+1),))
-                    #self.alphabet.append(tuple(k+1))
-                    #self.alphabet.append((k+1,))
-                    
+                if (len(args)==1) and (type(args[0])==list):
+                    self.alphabet = []
+                    for a in args[0]:
+                        self.alphabet.append(tuple(a))
+                else:
+                    self.alphabet = []
+                    for k in range(self.n_outcomes):
+                        self.alphabet.append(tuple()+(str(k+1),))
+
+        
+        ################### ALPHABET #####################
         # If neither population nor prior_prob are arguments, experiment is built by alphabet
         elif 'alphabet' in kwargs:
             # Set population to None
@@ -102,17 +127,16 @@ class PExp():
         else:
             if len(args)>1:
                 raise AttributeError('PExp admits only one free argument as n_outcomes or alphabet list')
+            
             elif len(args)==1:
+            	################### SIMPLE ALPHABET #####################
                 self.alphabet = []
                 if type(args[0])==list:
                     self.n_outcomes = len(args[0])
-                    #print(self.n_outcomes)
-                    #print(args[0])
                     for a in args[0]:
-                    #    print(a)
                         self.alphabet.append(tuple(a))
-                    #   print(self.alphabet)
                 else:
+                ################### N. OUTCOMES #####################
                     self.n_outcomes = args[0]
                     for k in range(self.n_outcomes):
                         self.alphabet.append(tuple()+(str(k+1),))
@@ -121,19 +145,39 @@ class PExp():
             self.population = None
             self.prior_prob = np.ones(self.n_outcomes,dtype='float')/self.n_outcomes
             
-                
+        ################### N. TRIALS #####################    
         if 'n_trials' in kwargs:
             self.n_trials = kwargs['n_trials']
         else:
             self.n_trials = 1000*self.n_outcomes
         
+        ################### INIT POST PROBABILITY #####################  
         # Initialize post_prob
-        self.post_prob = np.zeros(len(self.prior_prob))
+        self.post_prob = np.zeros(self.n_outcomes)
         
+        ################### INIT EXP DICTIONARY #####################  
         # Make experiment dictionary
         self.exp_dict = {}
         for k in range(self.n_outcomes):
-            self.exp_dict[self.alphabet[k]] = {'prior_prob':self.prior_prob[k],'post_prob':self.post_prob[k]}
+            self.exp_dict[self.alphabet[k]] = {'prior_prob':self.prior_prob[k],
+                                               'prior_prob_frac':Fraction(self.prior_prob[k]).limit_denominator(100),
+                                               'post_prob':self.post_prob[k]}
+        
+        ################### SET ORIGINAL VALUES ##################### 
+        self._orig_population = None
+        if self.has_population:
+        	self._orig_population = self.population.copy()
+        self._orig_prob = self.prior_prob.copy()
+
+        ################### SET EXP HAS_CHANGED AS FALSE ##################### 
+        self.has_changed = False
+
+
+        ################### SET RECURSIVE EXP #####################
+        if 'rec' in kwargs:
+        	self.rec = kwargs['rec']
+        else:
+        	self.rec = False
             
     
     def info(self):
@@ -141,9 +185,13 @@ class PExp():
         print('Population: {}'.format(self.population))
         print('Alphabet: {}'.format(self.alphabet))
         print('Prior_prob: {}'.format(self.prior_prob))
+        for k in range(self.n_outcomes):
+        	print('Prior_prob_frac[{}]: {}'.format(k+1,self.exp_dict[self.alphabet[k]]['prior_prob_frac']))
         print('N_outcomes: {}'.format(self.n_outcomes))
         print('N_trials: {}'.format(self.n_trials))
         print('Post_prob: {}'.format(self.post_prob))
+        print('Has Population: {}'.format(self.has_population))
+        print('Recursive exp: {}'.format(self.rec))
         print('Exp_dict:')
         pprint.pprint(self.exp_dict)
         print()
@@ -158,6 +206,31 @@ class PExp():
             self.post_prob[k] = np.sum(csp[k] > unif)/self.n_trials - p0
             p0 += self.post_prob[k]
             self.exp_dict[self.alphabet[k]]['post_prob'] = self.post_prob[k]
+
+    def update_exp_dict(self):
+        for k in range(self.n_outcomes):
+            self.exp_dict[self.alphabet[k]]['prior_prob'] = self.prior_prob[k]
+            self.exp_dict[self.alphabet[k]]['prior_prob_frac'] = Fraction(self.prior_prob[k]).limit_denominator(100)
+
+
+    def update_exp(self,el):
+        self.population[el] -= 1
+        k=0
+        for sym in self.alphabet:
+            self.prior_prob[k] = self.population[sym]
+            k+=1
+        # Normalize prior_prob
+        self.prior_prob /= np.sum(self.prior_prob)
+        self.update_exp_dict()
+        self.has_changed = True
+
+
+    def reset_exp(self):
+        self.population = self._orig_population.copy()
+        self.prior_prob = self._orig_prob.copy()
+        self.update_exp_dict()
+        self.has_changed = False
+
     
     def __mul__(self,right):
         if type(right) != PExp:
@@ -179,7 +252,12 @@ class PExp():
                 ind +=1
         
         return PExp(alphabet=alphabet,prior_prob=prior_prob)
-    
+
+
+
+###########################################################################################
+#                                      CLASS EVENT                                         #
+###########################################################################################
 
 class Event():
     def __init__(self,abc,exp):
@@ -218,11 +296,18 @@ class Event():
         for el in self.abc:
             if el in exp.exp_dict:
                 self.prob += exp.exp_dict[el]['prior_prob']
+                if exp.rec:
+                	exp.update_exp(el)
         
         
     def get_prob(self):
         return self.prob
         
+    def get_prob_frac(self):
+    	return Fraction(self.prob).limit_denominator(100)
+
+    def print_prob(self):
+    	print('Probability:',self.prob,'(',Fraction(self.prob).limit_denominator(100),')')
         
         
     def __neg__(self):
