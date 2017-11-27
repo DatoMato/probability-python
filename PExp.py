@@ -9,148 +9,122 @@ from fractions import Fraction
 class PExp():
     
     def __init__(self,*args,**kwargs):
+        ####################################################
+        #              Check input arguments               #
+        ####################################################
+        self._has_population = False
+        self._has_alphabet = False
+        self._has_probability = False
+        self._has_n_outcomes = False
 
-    	####################################################
-    	#              Check input arguments               #
-    	####################################################
-
-    	################### POPULATION #####################
-        # Population has the highest priority
-        self.has_population = False
         if 'population' in kwargs:
-            self.has_population = True
-            # Population is a list
-            if type(kwargs['population']) == list:
-                # Create alphabet from population
-                self.alphabet = sorted(list(set(kwargs['population'])))
-                # Set alphabet items as tuples
-                for k in range(len(self.alphabet)):
-                    if type(self.alphabet[k]) != tuple:
-                        self.alphabet[k] = tuple(self.alphabet[k])
-                # Set n_outcomes
-                self.n_outcomes = len(self.alphabet)
-                # Set prior_prob
-                self.prior_prob = np.zeros(self.n_outcomes)
-                # Set population
-                self.population = dict.fromkeys(self.alphabet,0)
-                k = 0
-                for sym in self.alphabet:
-                    for s in kwargs['population']:
-                        if tuple(s) == sym:
-                            self.population[sym]+=1
-                            self.prior_prob[k]+=1
-                    k+=1
-                # Normalize prior_prob
-                self.prior_prob /= np.sum(self.prior_prob)
-            
-            # Population is a dictionary
-            elif type(kwargs['population']) == dict:
-                # Create alphabet from population
-                self.alphabet = sorted(kwargs['population'].keys())
-                # Set alphabet items as tuples
-                for k in range(len(self.alphabet)):
-                    if type(self.alphabet[k]) != tuple:
-                        self.alphabet[k] = tuple(self.alphabet[k])
-                # Set population
-                self.population = dict.fromkeys(self.alphabet,0)
-                for sym in self.alphabet:
-                    self.population[sym] = kwargs['population'][sym[0]]
-                # Set n_outcomes
-                self.n_outcomes = len(self.alphabet)
-                # Set prior_prob
-                self.prior_prob = np.zeros(self.n_outcomes)
-                k=0
-                for sym in self.alphabet:
-                    #self.prior_prob[k] = kwargs['population'][sym]
-                    self.prior_prob[k] = self.population[sym]
-                    k+=1
-                # Normalize prior_prob
-                self.prior_prob /= np.sum(self.prior_prob)
-                
-            # Population argument can be only a list or a dictionary: raising excpetion
-            else:
-                raise TypeError('Population must be a list or a dictionary')
-                
-        ################### PRIOR_PROB #####################
-        # If population is not present at input, build experiment with prior_prob
-        elif 'prior_prob' in kwargs:
-            # Set population to None
-            self.population = None
-            # If prior_prob argument is a list, transform to a numpy array
-            if type(kwargs['prior_prob']) == list:
-                self.prior_prob = np.array(kwargs['prior_prob'],dtype='float')
-            # prior_prob argument is a numpy array
-            elif isinstance(kwargs['prior_prob'],np.ndarray):
-                self.prior_prob = kwargs['prior_prob']
-            # Normalize prior_prob
-            self.prior_prob /= np.sum(self.prior_prob)
-            # Set n_outcomes
-            self.n_outcomes = len(self.prior_prob)
-            # If alphabet argument is present and is a list, set alphabet
-            if 'alphabet' in kwargs:
-                self.alphabet = []
-                if(len(kwargs['alphabet']) != self.n_outcomes):
-                    raise ValueError('Alphabet length must be equal to prior_prob length')
-                for a in kwargs['alphabet']:
-                    self.alphabet.append(tuple(a))
-            # If alphabet argument is not present, build an artificial alphabet (1,2,3,...)
-            else:
-                if (len(args)==1) and (type(args[0])==list):
-                    self.alphabet = []
-                    for a in args[0]:
-                        self.alphabet.append(tuple(a))
-                else:
-                    self.alphabet = []
-                    for k in range(self.n_outcomes):
-                        self.alphabet.append(tuple()+(str(k+1),))
+            self._has_population = True
+        if 'alphabet' in kwargs:
+            self._has_alphabet = True
+        if 'prior_prob' in kwargs:
+            self._has_probability = True
 
-        
+        self.alphabet = []
+        self.population = {}
+        self.n_outcomes = 0
+
+        ################### POPULATION #####################
+        # Population has the highest priority
+        if self._has_population:
+            # If population is a dictionary, key is the element name and the value is the amount of elements
+            if type(kwargs['population']) == dict:
+                self.dict2alphabet_population(kwargs['population'])
+            # If population is a list it contains the sequence of all elements
+            elif type(kwargs['population']) == list:
+                pop = {}
+                aset = set(kwargs['population'])
+                for sym in aset:
+                    pop[sym] = 0
+                for sym in kwargs['population']:
+                    pop[sym] += 1
+                self.dict2alphabet_population(pop)
+            self.set_n_outcomes_from_alphabet()
+            self.population2probability()
+
         ################### ALPHABET #####################
-        # If neither population nor prior_prob are arguments, experiment is built by alphabet
-        elif 'alphabet' in kwargs:
-            # Set population to None
-            self.population = None
-            # Set alphabet
-            self.alphabet = []
-            for a in kwargs['alphabet']:
-                if type(a) == tuple:
-                    self.alphabet.append(a)
-                else:
-                    self.alphabet.append(tuple()+(a,))
-            # Set n_outcomes
-            self.n_outcomes = len(self.alphabet)
-            # Set prior_prob as uniform
-            self.prior_prob = np.ones(self.n_outcomes,dtype='float')/self.n_outcomes
-            
-        # If no arguments are present (population, prior_prob, alphabet), check if a single numeric
-        # value is passed: this is n_outcomes
-        else:
-            if len(args)>1:
-                raise AttributeError('PExp admits only one free argument as n_outcomes or alphabet list')
-            
-            elif len(args)==1:
-            	################### SIMPLE ALPHABET #####################
-                self.alphabet = []
-                if type(args[0])==list:
-                    self.n_outcomes = len(args[0])
-                    for a in args[0]:
-                        self.alphabet.append(tuple(a))
-                else:
-                ################### N. OUTCOMES #####################
-                    self.n_outcomes = args[0]
-                    for k in range(self.n_outcomes):
-                        self.alphabet.append(tuple()+(str(k+1),))
+        elif self._has_alphabet:
+            self.list2alphabet(kwargs['alphabet'])
+            self.set_n_outcomes_from_alphabet()
+            if self._has_probability:
+                self.set_probability(kwargs['prior_prob'])
             else:
-                self.n_outcomes = 2
-            self.population = None
-            self.prior_prob = np.ones(self.n_outcomes,dtype='float')/self.n_outcomes
-            
-        ################### N. TRIALS #####################    
+                self.set_probability(None)
+        
+        ################### PROBABILITY #####################
+        elif self._has_probability:
+            self.set_probability(kwargs['prior_prob'])
+            self.set_n_outcomes_from_probability()
+            if self._has_alphabet:
+                self.list2alphabet(kwargs['alphabet'])
+            else:
+                if (len(args) > 0) and (type(args[0])==list):
+                    self.list2alphabet(args[0])
+                else:
+                    self.list2alphabet(list(range(1,self.n_outcomes+1)))
+
+
+        elif (len(args) > 0) and (type(args[0])==list):
+            self.list2alphabet(args[0])
+            self.set_n_outcomes_from_alphabet()
+            if self._has_probability:
+                self.set_probability(kwargs['prior_prob'])
+            else:
+                self.set_probability(None)
+
+        elif (len(args) > 0) and (type(args[0])==int):
+            self.n_outcomes = args[0]
+            self._has_n_outcomes = True
+            if self._has_probability:
+                self.set_probability(kwargs['prior_prob'])
+            else:
+                self.set_probability(None)
+            if self._has_alphabet:
+                self.list2alphabet(kwargs['alphabet'])
+            else:
+                self.list2alphabet(list(range(1,self.n_outcomes+1)))
+
+        else:
+            raise AttributeError('Experiment must be initialized')
+
+        if self._has_population == False:
+            self.set_population()
+
+        ################### Build Experiment Dictionary ###################
+        self.set_exp_dict()
+
+        ################### Set n_trials ###################
         if 'n_trials' in kwargs:
             self.n_trials = kwargs['n_trials']
         else:
-            self.n_trials = 1000*self.n_outcomes
-        
+            self.n_trials = None
+
+        ################### SET RECURSIVE EXP #####################
+        if 'rec' in kwargs:
+            self.rec = kwargs['rec']
+        else:
+            self.rec = False
+
+        ################### SET ORIGINAL VALUES ##################### 
+        self._orig_population = None
+        if self._has_population:
+            self._orig_population = self.population.copy()
+        self._orig_prob = self.prior_prob.copy()
+
+        self.has_changed = False
+
+
+
+    def set_population(self):
+        for s in self.alphabet:
+            self.population[s] = 1
+
+
+    def set_exp_dict(self):
         ################### INIT POST PROBABILITY #####################  
         # Initialize post_prob
         self.post_prob = np.zeros(self.n_outcomes)
@@ -162,23 +136,74 @@ class PExp():
             self.exp_dict[self.alphabet[k]] = {'prior_prob':self.prior_prob[k],
                                                'prior_prob_frac':Fraction(self.prior_prob[k]).limit_denominator(100),
                                                'post_prob':self.post_prob[k]}
-        
-        ################### SET ORIGINAL VALUES ##################### 
-        self._orig_population = None
-        if self.has_population:
-        	self._orig_population = self.population.copy()
-        self._orig_prob = self.prior_prob.copy()
-
-        ################### SET EXP HAS_CHANGED AS FALSE ##################### 
-        self.has_changed = False
 
 
-        ################### SET RECURSIVE EXP #####################
-        if 'rec' in kwargs:
-        	self.rec = kwargs['rec']
+    def list2alphabet(self,l):
+        self.alphabet = []
+        for k in range(len(l)):
+            if type(l[k])==tuple:
+                self.alphabet.append(l[k])
+            else:
+                self.alphabet.append((str(l[k]),))
+        self._has_alphabet = True
+
+    def dict2alphabet_population(self,d):
+        l = list(d.keys())
+        for s in l:
+            if type(s)==tuple:
+                self.alphabet.append(s)
+                self.population[s] = d[s]
+            else:
+                self.alphabet.append((str(s),))
+                self.population[(str(s),)] = d[s]
+        self._has_population = True
+        self._has_alphabet = True
+
+    def set_n_outcomes_from_alphabet(self):
+        if self._has_alphabet:
+            self.n_outcomes = len(self.alphabet)
+            self._has_n_outcomes = True
         else:
-        	self.rec = False
-            
+            raise ValueError('Alphabet must be initialized')
+
+    def set_n_outcomes_from_probability(self):
+        if self._has_probability:
+            self.n_outcomes = len(self.prior_prob)
+            self._has_n_outcomes = True
+        else:
+            raise ValueError('Prior_prob must be initialized')
+
+
+    def population2probability(self):
+        self.prior_prob = np.zeros(self.n_outcomes)
+        if self._has_alphabet and self._has_n_outcomes:
+            for k in range(self.n_outcomes):
+                self.prior_prob[k] = self.population[self.alphabet[k]]
+            self.prior_prob /= np.sum(self.prior_prob)
+            self._has_probability = True
+        else:
+            raise ValueError('Alphabet must be initialized')
+
+    def set_probability(self,p):
+        if self._has_probability:
+            if type(p) == list:
+                self.n_outcomes = len(p)
+                self._has_n_outcomes = True
+            self.prior_prob = np.zeros(self.n_outcomes)
+            for k in range(self.n_outcomes):
+                self.prior_prob[k] = p[k]
+        else:
+            if self._has_n_outcomes == False:
+                if self._has_alphabet == False:
+                    raise ValueError('Alphabet or Prior_prob or N_outcomes must be initialized')
+                else:
+                    set_n_outcomes_from_alphabet()
+            self.prior_prob = np.zeros(self.n_outcomes)
+            for k in range(self.n_outcomes):
+                self.prior_prob[k] = 1
+
+        self.prior_prob /= np.sum(self.prior_prob)
+        self._has_probability = True
     
     def info(self):
         print('-'*100)
@@ -190,7 +215,6 @@ class PExp():
         print('N_outcomes: {}'.format(self.n_outcomes))
         print('N_trials: {}'.format(self.n_trials))
         print('Post_prob: {}'.format(self.post_prob))
-        print('Has Population: {}'.format(self.has_population))
         print('Recursive exp: {}'.format(self.rec))
         print('Exp_dict:')
         pprint.pprint(self.exp_dict)
@@ -230,6 +254,9 @@ class PExp():
         self.prior_prob = self._orig_prob.copy()
         self.update_exp_dict()
         self.has_changed = False
+
+    def set_recursive(self,flag):
+        self.rec = flag
 
     
     def __mul__(self,right):
