@@ -293,6 +293,11 @@ class Event():
             
         if type(abc) != list:
             raise TypeError('Elements must be a list')
+
+        for k in range(len(abc)):
+            if type(abc[k]) != tuple:
+                abc[k] = (str(abc[k]),)
+
         
         fle = [True]*len(exp.alphabet)
         
@@ -335,6 +340,10 @@ class Event():
 
     def print_prob(self):
     	print('Probability:',self.prob,'(',Fraction(self.prob).limit_denominator(100),')')
+
+    def is_independent(self,ev2):
+        evcond = self|ev2
+        return np.isclose(evcond.prob,self.prob)
         
         
     def __neg__(self):
