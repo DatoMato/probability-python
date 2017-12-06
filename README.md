@@ -26,14 +26,14 @@ WARNING: if alphabet or prior_prob are given, population is created by the name 
 - _rec_: defines if the experiment is recursive or not. If True, after any experiment extraction, the related population individual value will be decreased by 1, setting the related probability accordingly.  
 
 
-Methods:  
+**Methods:**   
 - _make_exp([int])_: allows to evaluate the post-probabilities based on frequency. If an argument is passed, it is the number of trials (n_trials).  
 - _set_recursive(Bool)_: set 'rec' to True or False depending on the passed argument.  
 - _reset_exp()_: reset the experiment by setting the population to the original values.   
 - _info()_: prints the main informations about the experiment.  
   
-Operators:  
-- \*: (__MUL__) makes the cartesian product between two experiments.  
+**Operators:**  
+- \*: (\_\_MUL\_\_) makes the cartesian product between two experiments.  
 
   
   
@@ -45,17 +45,17 @@ An event can be created by the Event class:
 - _PExp_: the associated experiment.  
   
   
-Methods:  
+**Methods:**  
 - _get_prob()_: returns the event associated probability  
 - _get_prob_frac()_: returns the event associated probability as a fraction  
 - _print_prob()_: prints the event associated probability  
 - _is_independent(Event)_: returns the boolean value True or False if the passed Event argument is independent (True) or not (False) of the calling Event.  
 
-Operators:  
-- +: (__SUM__) makes the union of two events  
-- \*: (__MUL__) makes the intersection of two events  
-- |: (__OR__) makes the conditional operation between the events  
-- \-: (__NEG__) makes the negation of the calling event  
+**Operators:**  
+- +: (\_\_SUM\_\_) makes the union of two events  
+- \*: (\_\_MUL\_\_) makes the intersection of two events  
+- |: (\_\_OR\_\_) makes the conditional operation between the events  
+- \-: (\_\_NEG\_\_) makes the negation of the calling event  
   
   
   
