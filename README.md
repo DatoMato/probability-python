@@ -36,6 +36,7 @@ WARNING: if alphabet or prior_prob are given, population is created by the name 
 - \*: (\_\_MUL\_\_) makes the cartesian product between two experiments.  
 
   
+<hr>
   
   
 An event can be created by the Event class:  
