@@ -58,6 +58,7 @@ An event can be created by the Event class:
 - \-: (\_\_NEG\_\_) returns the negation of the calling event  
   
   
+  <hr>
   
-
+  
 ToDo: Recurive experiments with multiple events
