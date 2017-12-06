@@ -32,7 +32,7 @@ WARNING: if alphabet or prior_prob are given, population is created by the name 
 - _info()_: prints the main informations about the experiment.  
   
 **Operators:**  
-- \*: (\_\_MUL\_\_) makes the cartesian product of two experiments.  
+- \*: (\_\_MUL\_\_) returns the cartesian product of two experiments.  
 
   
 <hr>
@@ -52,10 +52,10 @@ An event can be created by the Event class:
 - _is_independent(Event)_: returns the boolean value True or False if the passed Event argument is independent (True) or not (False) of the calling Event.  
 
 **Operators:**  
-- +: (\_\_SUM\_\_) makes the union of two events  
-- \*: (\_\_MUL\_\_) makes the intersection of two events  
-- |: (\_\_OR\_\_) makes the conditional operation between the events  
-- \-: (\_\_NEG\_\_) makes the negation of the calling event  
+- +: (\_\_SUM\_\_) returns the union of two events  
+- \*: (\_\_MUL\_\_) returns the intersection of two events  
+- |: (\_\_OR\_\_) returns the conditional operation between the events  
+- \-: (\_\_NEG\_\_) returns the negation of the calling event  
   
   
   
