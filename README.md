@@ -2,7 +2,9 @@
 
 Probability classes in Python
 
-The present code has been written for educational purpose only. Any other application is not recommended since the debugging stage and the stress test will not be implemented.
+The present code has been written for educational purpose only.
+Any other application is not recommended since the debugging stage
+and the stress test will not be implemented.
 
 
 
