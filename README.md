@@ -15,7 +15,7 @@ Allows to create a probabilistic experiment along with the number of outcomes, a
 An experiment can be created by:  
 
 
-PExp( [int or list], [alphabet = list], [prior_prob = list], [population = {dict or list}], [n_trials = int], [rec = boolean] )  
+#### PExp( [int or list], [alphabet = list], [prior_prob = list], [population = {dict or list}], [n_trials = int], [rec = boolean] )  
 - int: is the number of the experiment outcomes. It is sufficient to create a simple experiment. Must be at least 2. Future version may accept 1 and create a binary complementary experiment (A, notA). If no more arguments are passed, associated alphabet, population and probabilities are automatically set. The instance variable name is 'n_outcomes'.  
 - list: contains the alphabet of the experiment. Elements can be  
          simple numbers or strings. If no more arguments are passed,  
