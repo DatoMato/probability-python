@@ -32,7 +32,7 @@ WARNING: if alphabet or prior_prob are given, population is created by the name 
 - _info()_: prints the main informations about the experiment.  
   
 **Operators:**  
-- \*: (\_\_MUL\_\_) makes the cartesian product between two experiments.  
+- \*: (\_\_MUL\_\_) makes the cartesian product of two experiments.  
 
   
 <hr>
