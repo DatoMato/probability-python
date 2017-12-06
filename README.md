@@ -8,10 +8,9 @@ The present code has been written for educational purpose only. Any other applic
 PExp module consists of two classes: PExp and Event.  
   
   
-PExp (class):
+PExp (class): Allows to create a probabilistic experiment along with the number of outcomes, alphabet of symbols, elements population and associated probabilities.  
 
 
-Allows to create a probabilistic experiment along with the number of outcomes, alphabet of symbols, elements population and associated probabilities.  
 An experiment can be created by:  
 
 
